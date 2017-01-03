@@ -1,17 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% @author rwalski
-%%% @copyright (C) 2016, <COMPANY>
-%%% @doc
-%%%
-%%% @end
-%%% Created : 30. gru 2016 8:06 PM
-%%%-------------------------------------------------------------------
 -module(semaphore).
--author("rwalski").
-
-%% API
-%%-export([]).
+-author("rwalski, mpiotrowski").
 -compile(export_all).
+
 
 
 start() ->
@@ -55,6 +45,7 @@ free(N) ->
   end.
 
 busy(Pid) ->
+
   receive
     {signal, Pid} ->
       free(getSize()-1);
