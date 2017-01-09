@@ -54,7 +54,7 @@ getIdFromUser(Socket) ->
 
 printOptions(Socket) ->
   gen_tcp:send(Socket, "To quit type 'quit'\n"),
-  gen_tcp:send(Socket, "To book the book type 'book: \"<BookName>\" \"<Author>\"\n"),
+  gen_tcp:send(Socket, "To borrow the book type 'borrow: \"<BookName>\" \"<Author>\"\n"),
   gen_tcp:send(Socket, "To return the book type: return: \"<BookName>\" \"<Author>\"\n\n").
 
 
@@ -74,6 +74,6 @@ handle(Socket, Id) ->
 
 %todo validation
 checkAndExtractId(Id) ->
-  %I = string:str(Id, "Id: "), %% must be 1
+  %I = string:str(Id, "Id: "), %% must be 1 'Id: ------
   RealId = string:substr(binary_to_list(Id), 5),
   RealId.

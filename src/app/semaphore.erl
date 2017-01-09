@@ -12,16 +12,17 @@ stop() ->
   semaphore ! stop.
 
 wait() ->
-  semaphore ! {wait, self()},
-  receive ok -> ok end.
+  Pid = whereis(semaphore),
+  Pid ! {wait, self()},
+  receive {ok, Pid} -> ok end.
 
 signal() ->
   semaphore ! {signal, self()}.
 
-get() ->
-  semaphore ! {get, self()},
+get() ->Pid = whereis(semaphore),
+  Pid ! {get, self()},
   receive
-    N -> N
+    {N, Pid} -> N
   end.
 
 init() ->
@@ -30,7 +31,7 @@ init() ->
 free(N) ->
   receive
     {wait, Pid} ->  % client is waiting
-      Pid ! ok,
+      Pid ! {ok, self()},
       case N < getSize()-1 of
         true -> free(N+1);
         false -> busy(Pid)
@@ -38,10 +39,11 @@ free(N) ->
     {signal, Pid} ->  % notify that client is walking away
       free(N-1);
     {get, Pid} ->    % how many clients are ordering
-      Pid ! N,
+      Pid ! {N, self()},
       free(N);
     stop ->
       terminate()
+
   end.
 
 busy(Pid) ->
@@ -69,30 +71,33 @@ terminate() ->
 
 
 getSize() ->
-  semaphore_size ! {get, self()},
-  receive N ->  N end.
+  Pid = whereis(semaphore_size),
+  Pid ! {get, self()},
+  receive {N, Pid} ->  N end.
 
 setSize(N) ->
-  semaphor_size ! {change, N, self()},
+  Pid = whereis(semaphore_size),
+  Pid ! {change, N, self()},
   receive
-    ok -> ok;
-    error -> error
+    {ok, Pid} -> ok;
+    {error, Pid} -> error
   end.
 
 semaphore_size(N) ->
   receive
     {get, Pid} ->
-      Pid ! N, semaphore_size(N);
+      Pid ! {N, self()}, semaphore_size(N);
     {change, NN, Pid} ->
       if
-        NN >= N -> Pid ! ok, semaphore_size(NN);
+        NN >= N -> Pid ! {ok, self()}, semaphore_size(NN);
         NN <  N ->
-          semaphore ! {get, self()},
+          Semaphore_Pid = whereis(semaphore),
+          Semaphore_Pid ! {get, self()},
           receive
-            SN ->
+            {SN, Semaphore_Pid} ->
               if
-                SN =< NN -> Pid ! ok, semaphore_size(NN);
-                SN > N -> Pid ! error, semaphore_size(NN)
+                SN =< NN -> Pid ! {ok, self()}, semaphore_size(NN);
+                true -> Pid ! {error, self()}, semaphore_size(N)
               end
           end
       end
